@@ -35,6 +35,11 @@ var ProductTable = React.createClass({
         var id = 0;
         // Recibira una lista de productos
         this.props.products.forEach(function(product) {
+            // Si el texto digitado se encuentra en el nombre o si el producto no tiene existencias y el checkbox esta activado
+            if (product.name.indexOf(this.props.filterText) === -1 || (!product.stocked && this.props.inStockOnly)) {
+                return;
+            }
+
             // Vemos si ya habiamos mostrado la categoria del producto
             if (product.category !== lastCategory) {
                 // Metemos en nuestro array de filas un componente con la descripcion de la categoria
@@ -45,7 +50,7 @@ var ProductTable = React.createClass({
             // La ultima catergoria de producto
             lastCategory = product.category;
             id++;
-        });
+        }.bind(this));
         // La tabla tendra un array de filas de tipo ProductRow o ProductCategory
         return (
             <table>
@@ -64,12 +69,19 @@ var ProductTable = React.createClass({
 
 // Es componente SearcBar tiene una caja de texto y un checkbox
 var SearchBar = React.createClass({
+     handleChange: function() {
+        this.props.onUserInput(
+            this.refs.filterTextInput.getDOMNode().value,
+            this.refs.inStockOnlyInput.getDOMNode().checked
+        );
+    },
+
     render: function() {
         return (
             <form>
-                <input type="text" placeholder="Search..." />
+                <input type="text" placeholder="Search..." value={this.props.filterText} ref="filterTextInput" onChange={this.handleChange} />
                 <p>
-                    <input type="checkbox" />
+                    <input type="checkbox"  checked={this.props.inStockOnly}    ref="inStockOnlyInput" onChange={this.handleChange} />
                     {' '}
                     Only show products in stock
                 </p>
@@ -79,12 +91,35 @@ var SearchBar = React.createClass({
 });
 
 // El componente FilterableProductTable es el contenedor de los componentes SearchBar y ProductTable
+// Al inicializar no se filtran los productos
 var FilterableProductTable = React.createClass({
+    getInitialState: function() {
+        return {
+            filterText: '',
+            inStockOnly: false
+        };
+    },
+
+    handleUserInput: function(filterText, inStockOnly) {
+        this.setState({
+            filterText: filterText,
+            inStockOnly: inStockOnly
+        });
+    },
+
     render: function() {
         return (
-            <div>
-                <SearchBar />
-                <ProductTable products={this.props.products} />
+          <div>
+                <SearchBar
+                    filterText={this.state.filterText}
+                    inStockOnly={this.state.inStockOnly}
+                    onUserInput={this.handleUserInput}
+                />
+                <ProductTable
+                    products={this.props.products}
+                    filterText={this.state.filterText}
+                    inStockOnly={this.state.inStockOnly}
+                />
             </div>
         );
     }
